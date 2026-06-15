@@ -130,7 +130,42 @@ def trigger_emergency_dispatch():
         "distance_km": "5.2 km",
         "eta_minutes": "20 mins"
     }), 200
+# --- TEMPORARY DATABASE SETUP ROUTE ---
 
+@app.route('/api/setup-database', methods=['GET'])
+def setup_database():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Run the exact SQL commands we need
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory (
+                id SERIAL PRIMARY KEY,
+                part_name VARCHAR(255) NOT NULL,
+                part_code VARCHAR(100) UNIQUE NOT NULL,
+                category VARCHAR(100),
+                cost_price NUMERIC(10, 2),
+                available_units INTEGER DEFAULT 0,
+                alert_limit INTEGER DEFAULT 3
+            );
+            
+            CREATE TABLE IF NOT EXISTS bookings (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                plate VARCHAR(100) NOT NULL,
+                type VARCHAR(150),
+                date DATE,
+                time TIME
+            );
+        """)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return "✅ Database tables created successfully! You can close this tab.", 200
+    except Exception as e:
+        return f"❌ Error: {str(e)}", 500
+        
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
